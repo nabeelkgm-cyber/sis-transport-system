@@ -1,285 +1,186 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Bus, 
-  Route, 
-  Users, 
-  FileText, 
-  Search, 
-  Settings,
-  TrendingUp,
-  Calendar,
-  CheckSquare
-} from 'lucide-react';
 
-interface DashboardStats {
-  totalBuses: number;
-  totalRoutes: number;
-  totalTransportUsers: number;
-  fnTransportUsers: number;
-  anTransportUsers: number;
-  averageOccupancy: number;
-}
-
-export default function HomePage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+export default function Home() {
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const APPS_SCRIPT_URL = process.env.NEXT_PUBLIC_APPS_SCRIPT_URL;
 
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    async function fetchStats() {
+      try {
+        if (!APPS_SCRIPT_URL) {
+          throw new Error('Apps Script URL not configured');
+        }
 
-  const fetchDashboardStats = async () => {
-    try {
-      const response = await fetch('/api/dashboard/stats');
-      const data = await response.json();
-      if (data.success) {
-        setStats(data.data);
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getStats`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch statistics');
+        }
+
+        const data = await response.json();
+        setStats(data);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching stats:', err);
+        setError(err.message || 'Failed to load statistics');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const quickActions = [
-    {
-      title: 'Transport Registration',
-      description: 'Register new students or update existing registrations',
-      href: '/registration',
-      icon: Bus,
-      color: 'primary',
-    },
-    {
-      title: 'Attendance Sheets',
-      description: 'Generate bus-wise attendance sheets for tracking',
-      href: '/attendance',
-      icon: CheckSquare,
-      color: 'success',
-    },
-    {
-      title: 'Route Sheets',
-      description: 'View and print bus route sheets with student lists',
-      href: '/route-sheets',
-      icon: Route,
-      color: 'warning',
-    },
-    {
-      title: 'Search Records',
-      description: 'Search students, buses, and routes quickly',
-      href: '/search',
-      icon: Search,
-      color: 'secondary',
-    },
-    {
-      title: 'Reports & Annexures',
-      description: 'Generate various reports and student lists',
-      href: '/reports',
-      icon: FileText,
-      color: 'primary',
-    },
-    {
-      title: 'System Administration',
-      description: 'Manage buses, routes, drivers, and teachers',
-      href: '/admin',
-      icon: Settings,
-      color: 'gray',
-    },
-  ];
-
-  const StatCard = ({ 
-    label, 
-    value, 
-    icon: Icon, 
-    trend 
-  }: { 
-    label: string; 
-    value: string | number; 
-    icon: any; 
-    trend?: { value: number; positive: boolean } 
-  }) => (
-    <div className="stat-card">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="stat-label">{label}</p>
-          <p className="stat-value">{value}</p>
-          {trend && (
-            <p className={trend.positive ? 'stat-change-positive' : 'stat-change-negative'}>
-              {trend.positive ? '+' : ''}{trend.value}% from last month
-            </p>
-          )}
-        </div>
-        <div className="p-3 bg-primary-100 rounded-lg">
-          <Icon className="w-8 h-8 text-primary-600" />
-        </div>
-      </div>
-    </div>
-  );
+    fetchStats();
+  }, [APPS_SCRIPT_URL]);
 
   return (
-    <div className="space-y-8">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-500 p-2 rounded-lg">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">SIS Transport</h1>
+                <p className="text-sm text-gray-500">Management System</p>
+              </div>
+            </div>
+            <nav className="hidden md:flex space-x-4">
+              <Link href="/" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-700">
+                Home
+              </Link>
+              <Link href="/registration" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Registration
+              </Link>
+              <Link href="/attendance" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Attendance
+              </Link>
+              <Link href="/reports" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Reports
+              </Link>
+            </nav>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-8 text-white">
-        <h1 className="text-4xl font-bold mb-2">
-          Welcome to SIS Transport Management System
-        </h1>
-        <p className="text-primary-100 text-lg">
-          Comprehensive solution for managing school transport operations at
-          Shantiniketan Indian School Qatar
-        </p>
-      </div>
-
-      {/* Statistics */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Quick Overview</h2>
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="card">
-                <div className="skeleton h-24 w-full rounded"></div>
-              </div>
-            ))}
-          </div>
-        ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label="Total Buses"
-              value={stats.totalBuses}
-              icon={Bus}
-            />
-            <StatCard
-              label="Active Routes"
-              value={stats.totalRoutes}
-              icon={Route}
-            />
-            <StatCard
-              label="Transport Users"
-              value={stats.totalTransportUsers}
-              icon={Users}
-            />
-            <StatCard
-              label="Average Occupancy"
-              value={`${stats.averageOccupancy}%`}
-              icon={TrendingUp}
-            />
-          </div>
-        ) : (
-          <div className="alert-danger">
-            Failed to load statistics. Please try refreshing the page.
-          </div>
-        )}
-      </div>
-
-      {/* Shift Breakdown */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card">
-            <h3 className="card-title">Forenoon Shift (FN)</h3>
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600">Transport Users</span>
-                <span className="font-bold text-2xl text-primary-600">
-                  {stats.fnTransportUsers}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-primary-600 h-3 rounded-full transition-all"
-                  style={{
-                    width: `${(stats.fnTransportUsers / stats.totalTransportUsers) * 100}%`,
-                  }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 className="card-title">Afternoon Shift (AN)</h3>
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-600">Transport Users</span>
-                <span className="font-bold text-2xl text-secondary-600">
-                  {stats.anTransportUsers}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-secondary-600 h-3 rounded-full transition-all"
-                  style={{
-                    width: `${(stats.anTransportUsers / stats.totalTransportUsers) * 100}%`,
-                  }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quickActions.map((action, index) => (
-            <Link
-              key={index}
-              href={action.href}
-              className="card hover:shadow-medium transition-all group"
-            >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 bg-${action.color}-100 rounded-lg group-hover:scale-110 transition-transform`}>
-                  <action.icon className={`w-6 h-6 text-${action.color}-600`} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-1">
-                    {action.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {action.description}
-                  </p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Activity (placeholder for future implementation) */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Recent Activity</h2>
-          <Link href="/dashboard" className="text-primary-600 text-sm hover:underline">
-            View All
-          </Link>
-        </div>
-        <div className="empty-state">
-          <Calendar className="empty-state-icon" />
-          <h3 className="empty-state-title">No Recent Activity</h3>
-          <p className="empty-state-description">
-            Recent transport registrations and updates will appear here
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="text-4xl font-bold mb-4">Welcome to SIS Transport Management System</h2>
+          <p className="text-xl text-blue-100">
+            Comprehensive solution for managing school transport operations at Shantiniketan Indian School Qatar
           </p>
         </div>
       </div>
 
-      {/* Help Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-        <h3 className="text-lg font-semibold mb-2 text-gray-900">
-          Need Help?
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Access our documentation and support resources to make the most of the system.
-        </p>
-        <div className="flex gap-4">
-          <button className="btn-outline">
-            View Documentation
-          </button>
-          <button className="btn-secondary">
-            Contact Support
-          </button>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Quick Overview */}
+        <section className="mb-12">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Overview</h3>
+          
+          {loading && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-blue-700">Loading statistics...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <p className="text-red-700">{error}</p>
+              <p className="text-sm text-red-600 mt-2">Please check your configuration and try refreshing the page.</p>
+              {!APPS_SCRIPT_URL && (
+                <p className="text-sm text-red-600 mt-2">
+                  <strong>Apps Script URL is not configured.</strong> Please set the NEXT_PUBLIC_APPS_SCRIPT_URL environment variable.
+                </p>
+              )}
+            </div>
+          )}
+
+          {stats && !loading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="text-sm font-medium text-gray-500">Total Students</div>
+                <div className="mt-2 text-3xl font-bold text-gray-900">{stats.totalStudents || 0}</div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="text-sm font-medium text-gray-500">Using Transport</div>
+                <div className="mt-2 text-3xl font-bold text-blue-600">{stats.transportUsers || 0}</div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="text-sm font-medium text-gray-500">Total Buses</div>
+                <div className="mt-2 text-3xl font-bold text-green-600">{stats.totalBuses || 0}</div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="text-sm font-medium text-gray-500">Active Routes</div>
+                <div className="mt-2 text-3xl font-bold text-purple-600">{stats.totalRoutes || 0}</div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Quick Actions */}
+        <section>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link href="/registration" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Transport Registration</h4>
+                  <p className="mt-1 text-sm text-gray-500">Register new students or update existing registrations</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/attendance" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="bg-green-100 p-3 rounded-lg">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Attendance Sheets</h4>
+                  <p className="mt-1 text-sm text-gray-500">Generate bus-wise attendance sheets for tracking</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/reports" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start space-x-4">
+                <div className="bg-purple-100 p-3 rounded-lg">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Reports & Annexures</h4>
+                  <p className="mt-1 text-sm text-gray-500">Generate various reports and student lists</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
