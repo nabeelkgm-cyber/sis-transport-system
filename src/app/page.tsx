@@ -14,21 +14,21 @@ export default function Home() {
     async function fetchStats() {
       try {
         if (!APPS_SCRIPT_URL) {
-          throw new Error('Apps Script URL not configured');
+          throw new Error('Apps Script URL not configured. Please check environment variables.');
         }
+
+        console.log('Fetching from:', APPS_SCRIPT_URL);
 
         const response = await fetch(`${APPS_SCRIPT_URL}?action=getStats`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch statistics');
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('Stats received:', data);
         setStats(data);
         setError(null);
       } catch (err: any) {
@@ -59,20 +59,6 @@ export default function Home() {
                 <p className="text-sm text-gray-500">Management System</p>
               </div>
             </div>
-            <nav className="hidden md:flex space-x-4">
-              <Link href="/" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-700">
-                Home
-              </Link>
-              <Link href="/registration" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                Registration
-              </Link>
-              <Link href="/attendance" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                Attendance
-              </Link>
-              <Link href="/reports" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                Reports
-              </Link>
-            </nav>
           </div>
         </div>
       </header>
@@ -95,18 +81,20 @@ export default function Home() {
           {loading && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-blue-700">Loading statistics...</p>
+              <p className="mt-4 text-blue-700">Loading statistics from Google Sheets...</p>
             </div>
           )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-700">{error}</p>
+              <p className="text-red-700 font-semibold">Error: {error}</p>
               <p className="text-sm text-red-600 mt-2">Please check your configuration and try refreshing the page.</p>
               {!APPS_SCRIPT_URL && (
-                <p className="text-sm text-red-600 mt-2">
-                  <strong>Apps Script URL is not configured.</strong> Please set the NEXT_PUBLIC_APPS_SCRIPT_URL environment variable.
-                </p>
+                <div className="mt-4 p-4 bg-red-100 rounded">
+                  <p className="text-sm text-red-800 font-mono">
+                    <strong>Missing Configuration:</strong> NEXT_PUBLIC_APPS_SCRIPT_URL is not set.
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -137,7 +125,7 @@ export default function Home() {
         <section>
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Link href="/registration" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-start space-x-4">
                 <div className="bg-blue-100 p-3 rounded-lg">
                   <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,9 +137,9 @@ export default function Home() {
                   <p className="mt-1 text-sm text-gray-500">Register new students or update existing registrations</p>
                 </div>
               </div>
-            </Link>
+            </div>
 
-            <Link href="/attendance" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-start space-x-4">
                 <div className="bg-green-100 p-3 rounded-lg">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,9 +151,9 @@ export default function Home() {
                   <p className="mt-1 text-sm text-gray-500">Generate bus-wise attendance sheets for tracking</p>
                 </div>
               </div>
-            </Link>
+            </div>
 
-            <Link href="/reports" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white rounded-lg shadow p-6">
               <div className="flex items-start space-x-4">
                 <div className="bg-purple-100 p-3 rounded-lg">
                   <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,10 +165,38 @@ export default function Home() {
                   <p className="mt-1 text-sm text-gray-500">Generate various reports and student lists</p>
                 </div>
               </div>
-            </Link>
+            </div>
           </div>
         </section>
       </div>
     </main>
   );
 }
+```
+
+5. **Commit message:** "Fix: Call Apps Script directly instead of local API"
+
+6. **Click "Commit changes"**
+
+7. **Wait 2-3 minutes** for Vercel to deploy
+
+8. **Hard refresh your website** (Ctrl+Shift+R)
+
+---
+
+## 🎯 **THIS CODE WILL:**
+
+✅ Call Apps Script directly with the URL from environment variables  
+✅ Show detailed error messages  
+✅ Log to console for debugging  
+✅ Display loading spinner  
+✅ Show stats cards when data loads  
+
+---
+
+## 📊 **After You Commit:**
+
+You should see in the console:
+```
+Fetching from: https://script.google.com/macros/s/AKfyc...
+Stats received: {totalStudents: X, totalBuses: Y, ...}
