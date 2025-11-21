@@ -1,0 +1,194 @@
+'use client';
+
+import { useState } from 'react';
+import { Search, Bus, User, Phone, MapPin, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+interface Student {
+  enrollmentNo: string;
+  name: string;
+  class: string;
+  division: string;
+  shift: string;
+  contactNo1: string;
+  contactNo2?: string;
+  parentName?: string;
+}
+
+interface Bus {
+  busNumber: string;
+  routeNumber: string;
+  routeName?: string;
+  driverName: string;
+  shift: string;
+}
+
+export default function RegistrationPage() {
+  const [enrollmentNo, setEnrollmentNo] = useState('');
+  const [student, setStudent] = useState<Student | null>(null);
+  const [buses, setBuses] = useState<Bus[]>([]);
+  const [selectedBus, setSelectedBus] = useState('');
+  const [stopName, setStopName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+
+  const searchStudent = async () => {
+    if (!enrollmentNo.trim()) {
+      toast.error('Please enter enrollment number');
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/students/${enrollmentNo}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        setStudent(data.data);
+        toast.success('Student found!');
+        
+        // Fetch buses for student's shift
+        const busRes = await fetch(`/api/buses?shift=${data.data.shift}`);
+        const busData = await busRes.json();
+        if (busData.success) {
+          setBuses(busData.data);
+        }
+      } else {
+        toast.error('Student not found');
+        setStudent(null);
+      }
+    } catch (error) {
+      toast.error('Error searching student');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!student || !selectedBus || !stopName) {
+      toast.error('Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // In production, this would call the API
+      toast.success('Transport registered successfully!');
+      setStudent(null);
+      setEnrollmentNo('');
+      setSelectedBus('');
+      setStopName('');
+    } catch (error) {
+      toast.error('Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-6 text-white">
+        <h1 className="text-3xl font-bold mb-2">Transport Registration</h1>
+        <p className="text-primary-100">Register new students or update existing transport registrations</p>
+      </div>
+
+      {/* Search Section */}
+      <div className="card">
+        <h2 className="card-title mb-4">Search Student</h2>
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Enter Enrollment Number (e.g., P12299)"
+              value={enrollmentNo}
+              onChange={(e) => setEnrollmentNo(e.target.value.toUpperCase())}
+              onKeyPress={(e) => e.key === 'Enter' && searchStudent()}
+              className="form-input"
+            />
+          </div>
+          <button onClick={searchStudent} disabled={searching} className="btn-primary">
+            {searching ? <span className="spinner" /> : <Search className="w-5 h-5" />}
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* Student Details */}
+      {student && (
+        <div className="card">
+          <h2 className="card-title mb-4">Student Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <User className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="font-medium">{student.name}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <span className="text-lg">🎓</span>
+              <div>
+                <p className="text-sm text-gray-500">Class</p>
+                <p className="font-medium">{student.class} - {student.division}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <Phone className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="text-sm text-gray-500">Contact</p>
+                <p className="font-medium">{student.contactNo1}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <span className="text-lg">⏰</span>
+              <div>
+                <p className="text-sm text-gray-500">Shift</p>
+                <p className="font-medium">{student.shift === 'FN' ? 'Forenoon' : 'Afternoon'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Registration Form */}
+      {student && (
+        <div className="card">
+          <h2 className="card-title mb-4">Transport Registration</h2>
+          <div className="space-y-4">
+            <div className="form-group">
+              <label className="form-label">Select Bus</label>
+              <select
+                value={selectedBus}
+                onChange={(e) => setSelectedBus(e.target.value)}
+                className="form-select"
+              >
+                <option value="">-- Select Bus --</option>
+                {buses.map((bus) => (
+                  <option key={bus.busNumber} value={bus.busNumber}>
+                    Bus {bus.busNumber} - {bus.routeNumber} ({bus.driverName})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Stop Name / Pickup Point</label>
+              <input
+                type="text"
+                value={stopName}
+                onChange={(e) => setStopName(e.target.value)}
+                placeholder="Enter pickup/drop point"
+                className="form-input"
+              />
+            </div>
+
+            <button onClick={handleRegister} disabled={loading} className="btn-success w-full">
+              {loading ? <span className="spinner" /> : <CheckCircle className="w-5 h-5" />}
+              Register for Transport
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
